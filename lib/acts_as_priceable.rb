@@ -1,6 +1,6 @@
 require "acts_as_priceable/version"
-require "acts_as_priceable/config"
+require "acts_as_priceable/base"
 require "active_record"
 
 
-ActiveRecord::Base.send :include, ActsAsPriceable::Config
+ActiveRecord::Base.send :include, ActsAsPriceable::Base
