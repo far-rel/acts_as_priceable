@@ -8,12 +8,16 @@ module ActsAsPriceable
       value / BigDecimal.new(100 + tax) * BigDecimal.new(100)
     end
 
-    def float_to_bigdecimal(value)
-      BigDecimal.new(value)
+    def to_bigdecimal(value, scale)
+      BigDecimal.new(value, scale + 1)
     end
 
     def int_to_bigdecimal(value, scale)
       BigDecimal.new(value) / BigDecimal.new(10**scale)
+    end
+
+    def bigdecimal_to_int(value, scale)
+      (value * 10**scale).to_i
     end
 
   end
