@@ -1,95 +1,72 @@
 require 'bigdecimal'
+require 'bigdecimal/util'
 
 module ActsAsPriceable
   module Base
 
     def self.included(klass)
       klass.class_eval do
-        extend Config
+        extend ClassMethods
       end
     end
 
-    module Config
+    module ClassMethods
+      def has_price(name = :price, scale = 2, without_validations = false)
 
-      PRICEABLE_DEFAULTS = {
-          tax: 23,
-          db_type: :integer,
-          db_store: :net,
-          scale: 2
-      }
-
-      def acts_as_priceable(&block)
-        yield self if block_given?
-        setup_accessors
-      end
-
-      def setup_accessors
-        @price_fields ||= [{
-            name: :price,
-            options: PRICEABLE_DEFAULTS
-        }]
-        @price_fields.each do |config|
-          setup_field config[:name], config[:options]
+        ActsAsPriceable::Schema::COLUMNS.each do |column_name, column_type|
+          raise AttributeError, "#{name}_#{column_name} is not defined" if columns_hash["#{name}_#{column_name}"].nil?
+          raise AttributeError, "#{name}_#{column_name} has wrong column type (is #{columns_hash["#{name}_#{column_name}"].type}) should be #{column_type}" if columns_hash["#{name}_#{column_name}"].type != column_type
         end
-      end
 
-      def setup_field(field, options)
-        setup_net field, options
-        setup_gross field, options
-      end
+        gross = "#{name}_gross"
+        net = "#{name}_net"
+        tax_value = "#{name}_tax_value"
+        tax = "#{name}_tax"
+        send :define_method, gross do
+          BigDecimal.new(self[gross.to_sym].to_i) / BigDecimal.new(10**scale.to_i)
+        end
 
-      def setup_gross(field, options)
-        self.send :attr_accessor, :"#{field}_gross"
-        self.send :define_method, "#{field}_gross" do
-          value = (options[:db_type] == :integer ?
-              int_to_bigdecimal(self.send(field).to_i, options[:scale]) :
-              to_bigdecimal(self.send(field).to_f, options[:scale]))
-          if options[:db_store] == :gross
-            value
+        send :define_method, "#{gross}=" do |value|
+          self[gross.to_sym] = (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i
+        end
+
+        send :define_method, net do
+          BigDecimal.new(self[net.to_sym].to_i) / BigDecimal.new(10**scale.to_i)
+        end
+
+        send :define_method, "#{net}=" do |value|
+          self[net.to_sym] = (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i
+        end
+
+        send :define_method, tax_value do
+          send(gross) - send(net)
+        end
+
+        send :attr_accessor, :mode
+        send :attr_accessor, name
+
+        send :define_method, "update_#{name}" do
+          if self.mode == 'net'
+            self.send "#{net}=", self.send(name)
+            self.send "#{gross}=", self.send(net) * ((BigDecimal.new(self.send(tax)) / 100) + 1)
           else
-            to_gross value, options[:tax]
+            self.send "#{gross}=", self.send(name)
+            self.send "#{net}=", self.send(gross) / ((BigDecimal.new(self.send(tax)) / 100) + 1)
           end
         end
-        self.send :define_method, "#{field}_gross=" do |value|
-          tmp = to_bigdecimal value, options[:scale]
-          if options[:db_store] == :net
-            tmp = to_net(tmp, options[:tax])
-          end
-          tmp = options[:db_type] == :integer ?
-              bigdecimal_to_int(tmp, options[:scale]) : tmp.to_f
-          self.send("#{field}=".to_sym, tmp)
-        end
-      end
 
-      def setup_net(field, options)
-        self.send :attr_accessor, :"#{field}_net"
-        self.send :define_method, "#{field}_net" do
-          value = (options[:db_type] == :integer ?
-              int_to_bigdecimal(self.send(field).to_i, options[:scale]) :
-              to_bigdecimal(self.send(field).to_f, options[:scale]))
-          if options[:db_store] == :net
-            value
-          else
-            to_net value, options[:tax]
+        send :before_validation do
+          if self.send(name) and self.mode
+            self.send "update_#{name}"
           end
         end
-        self.send :define_method, "#{field}_net=" do |value|
-          tmp = to_bigdecimal value, options[:scale]
-          if options[:db_store] == :gross
-            tmp = to_gross(tmp, options[:tax])
-          end
-          tmp = options[:db_type] == :integer ?
-              bigdecimal_to_int(tmp, options[:scale]) : tmp.to_f
-          self.send("#{field}=".to_sym, tmp)
-        end
-      end
 
-      def append_price(name, options = {})
-        @price_fields ||= []
-        @price_fields << {
-            name: name,
-            options: PRICEABLE_DEFAULTS.merge(options)
-        }
+        unless without_validations
+          send :validates, gross.to_sym, numericality: {greater_than: 0}
+          send :validates, net.to_sym, numericality: {greater_than: 0}
+          send :validates, tax.to_sym, numericality: {greater_than: 0}
+        end
+
       end
 
     end

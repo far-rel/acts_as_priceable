@@ -16,4 +16,5 @@ Gem::Specification.new do |gem|
   gem.version       = ActsAsPriceable::VERSION
   gem.add_dependency "activerecord", ">= 3.0.0"
   gem.add_dependency "bigdecimal", "~> 1.1.0"
+  gem.add_development_dependency 'rspec', "~> 2.10.0"
 end
