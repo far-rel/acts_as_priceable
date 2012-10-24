@@ -62,9 +62,10 @@ module ActsAsPriceable
         end
 
         unless without_validations
-          send :validates, gross.to_sym, numericality: {greater_than: 0}
-          send :validates, net.to_sym, numericality: {greater_than: 0}
-          send :validates, tax.to_sym, numericality: {greater_than: 0}
+          puts gross, net, tax
+          send :validates, gross.to_sym, numericality: {greater_than_or_equal_to: 0}
+          send :validates, net.to_sym, numericality: {greater_than_or_equal_to: 0}
+          send :validates, tax.to_sym, numericality: {greater_than_or_equal_to: 0}
         end
 
       end
