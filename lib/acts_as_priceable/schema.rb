@@ -23,8 +23,8 @@ module ActsAsPriceable
         raise ArgumentError, "Please specify price name in your add_price call in your migration." if price_names.empty?
 
         price_names.each do |price_name|
-          COLUMNS.each do |column_name, _|
-            add_column(table_name, "#{price_name}_#{column_name}")
+          COLUMNS.each do |column_name, column_type|
+            add_column(table_name, "#{price_name}_#{column_name}", column_type)
           end
         end
       end

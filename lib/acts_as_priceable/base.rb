@@ -11,7 +11,9 @@ module ActsAsPriceable
     end
 
     module ClassMethods
-      def has_price(name = :price, scale = 2, without_validations = false)
+      def has_price(name = :price, options = {})
+        scale = options[:scale] || 2
+        without_validations = options[:without_validations] || false
 
         ActsAsPriceable::Schema::COLUMNS.each do |column_name, column_type|
           raise AttributeError, "#{name}_#{column_name} is not defined" if columns_hash["#{name}_#{column_name}"].nil?
@@ -62,7 +64,6 @@ module ActsAsPriceable
         end
 
         unless without_validations
-          puts gross, net, tax
           send :validates, gross.to_sym, numericality: {greater_than_or_equal_to: 0}
           send :validates, net.to_sym, numericality: {greater_than_or_equal_to: 0}
           send :validates, tax.to_sym, numericality: {greater_than_or_equal_to: 0}

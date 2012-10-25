@@ -5,3 +5,4 @@ require "active_record"
 
 
 ActiveRecord::Base.send :include, ActsAsPriceable::Base
+ActiveRecord::Base.send :include, ActsAsPriceable::Schema

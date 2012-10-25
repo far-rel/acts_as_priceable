@@ -91,8 +91,7 @@ describe Dummy do
     describe 'validations' do
 
       before(:each) do
-        @dummy = Dummy.new price: '10.00', mode: 'net', price_tax: 23
-        @dummy.update_price
+        @dummy = Dummy.new price_net: '10.00', price_gross: '12.30', price_tax: 23
       end
 
       it 'correct should be valid' do
@@ -101,11 +100,6 @@ describe Dummy do
 
       it "price_net can't be negative" do
         @dummy.price_net = -1
-        puts @dummy.price_net >= 0
-        puts @dummy[:price_net]
-        puts @dummy.valid?
-        puts @dummy.errors.keys
-        puts Dummy.validators_on(:price_net)
         @dummy.valid?.should be(false)
       end
 
