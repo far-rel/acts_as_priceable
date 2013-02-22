@@ -72,5 +72,8 @@ module ActsAsPriceable
       end
 
     end
+
+    class AttributeError < StandardError; end
+
   end
 end
