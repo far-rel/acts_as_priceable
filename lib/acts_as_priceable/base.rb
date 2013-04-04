@@ -24,6 +24,8 @@ module ActsAsPriceable
         net = "#{name}_net"
         tax_value = "#{name}_tax_value"
         tax = "#{name}_tax"
+        mode = "#{name}_mode"
+
         send :define_method, gross do
           BigDecimal.new(self[gross.to_sym].to_i) / BigDecimal.new(10**scale.to_i)
         end
@@ -44,11 +46,11 @@ module ActsAsPriceable
           send(gross) - send(net)
         end
 
-        send :attr_accessor, :mode
+        send :attr_accessor, mode.to_sym
         send :attr_accessor, name
 
         send :define_method, "update_#{name}" do
-          if self.mode == 'net'
+          if self.send(mode).to_s == 'net'
             self.send "#{net}=", self.send(name)
             self.send "#{gross}=", self.send(net) * ((BigDecimal.new(self.send(tax)) / 100) + 1)
           else
@@ -58,7 +60,7 @@ module ActsAsPriceable
         end
 
         send :before_validation do
-          if self.send(name) and self.mode
+          if self.send(name) && self.send(mode)
             self.send "update_#{name}"
           end
         end

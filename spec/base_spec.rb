@@ -28,8 +28,8 @@ describe Dummy do
       end
 
       it 'should have mode attr_accessor' do
-        @dummy.should respond_to(:mode)
-        @dummy.should respond_to(:mode=)
+        @dummy.should respond_to(:price_mode)
+        @dummy.should respond_to(:price_mode=)
       end
 
       it 'should have price_tax_value method' do
@@ -63,7 +63,7 @@ describe Dummy do
       it 'calculates price gross from price_net' do
         @dummy.price = '10.00'
         @dummy.price_tax = 23
-        @dummy.mode = 'net'
+        @dummy.price_mode = 'net'
         @dummy.update_price
         @dummy.price_net.should == BigDecimal.new('10.00')
         @dummy.price_gross.should == BigDecimal.new('12.30')
@@ -72,7 +72,7 @@ describe Dummy do
       it 'calculates price net from price gross' do
         @dummy.price = '12.30'
         @dummy.price_tax = 23
-        @dummy.mode = 'gross'
+        @dummy.price_mode = 'gross'
         @dummy.update_price
         @dummy.price_net.should == BigDecimal.new('10.00')
         @dummy.price_gross.should == BigDecimal.new('12.30')
@@ -81,7 +81,7 @@ describe Dummy do
       it 'calculates tax value properly' do
         @dummy.price = '10.00'
         @dummy.price_tax = 23
-        @dummy.mode = 'net'
+        @dummy.price_mode = 'net'
         @dummy.update_price
         @dummy.price_tax_value.should == BigDecimal.new('2.30')
       end
