@@ -14,11 +14,12 @@ module ActsAsPriceable
       def has_price(name = :price, options = {})
         scale = options[:scale] || 2
         without_validations = options[:without_validations] || false
+        serialized = options[:serialized]
 
         ActsAsPriceable::Schema::COLUMNS.each do |column_name, column_type|
           raise AttributeError, "#{name}_#{column_name} is not defined" if columns_hash["#{name}_#{column_name}"].nil?
           raise AttributeError, "#{name}_#{column_name} has wrong column type (is #{columns_hash["#{name}_#{column_name}"].type}) should be #{column_type}" if columns_hash["#{name}_#{column_name}"].type != column_type
-        end
+        end if serialized.nil?
 
         gross = "#{name}_gross"
         net = "#{name}_net"
@@ -26,20 +27,44 @@ module ActsAsPriceable
         tax = "#{name}_tax"
         mode = "#{name}_mode"
 
+        send :define_method, "get_#{name}_attribute" do |attribute|
+          if serialized.nil?
+            self[attribute.to_sym].to_i
+          else
+            self.send(serialized)[attribute.to_s].to_i
+          end
+        end
+
+        send :define_method, "set_#{name}_attribute" do |attribute, value|
+          if serialized.nil?
+            self[attribute.to_sym] = value
+          else
+            self.send(serialized)[attribute.to_s] = value
+          end
+        end
+
         send :define_method, gross do
-          BigDecimal.new(self[gross.to_sym].to_i) / BigDecimal.new(10**scale.to_i)
+          BigDecimal.new(self.send("get_#{name}_attribute", gross)) / BigDecimal.new(10**scale.to_i)
         end
 
         send :define_method, "#{gross}=" do |value|
-          self[gross.to_sym] = (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i
+          self.send "set_#{name}_attribute", gross, (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i
         end
 
         send :define_method, net do
-          BigDecimal.new(self[net.to_sym].to_i) / BigDecimal.new(10**scale.to_i)
+          BigDecimal.new(self.send("get_#{name}_attribute", net)) / BigDecimal.new(10**scale.to_i)
         end
 
         send :define_method, "#{net}=" do |value|
-          self[net.to_sym] = (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i
+          self.send("set_#{name}_attribute", net, (value.to_s.gsub(',', '.').to_d * (10**scale)).to_i)
+        end
+
+        send :define_method, tax do
+          self.send "get_#{name}_attribute", tax
+        end
+
+        send :define_method, "#{tax}=" do |value|
+          self.send "set_#{name}_attribute", tax, value
         end
 
         send :define_method, tax_value do

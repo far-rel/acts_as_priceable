@@ -105,8 +105,16 @@ class Product < ActiveRecord::Base
 end
 ```
 
+From version 0.2.1 you can use serialized fields to store your price information. Gem supports serialization to Hash and Hstore
 
+```ruby
+class Product
+  serialize :data, Hash
 
+  has_price :price, serialized: :data
+
+end
+```
 
 ## Contributing
 

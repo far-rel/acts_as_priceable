@@ -1,3 +1,8 @@
 test:
-  adapter: sqlite3
-  database: ":memory:"
+  adapter: postgresql
+  database: acts_as_priceable_test
+  username: ruby
+  password: ruby
+  port: 5432
+  host: localhost
+  min_messages: warning
